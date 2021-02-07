@@ -3,33 +3,24 @@
 #[macro_use]
 extern crate rocket;
 
+use rocket::response::status::BadRequest;
 use rocket::Request;
 
 mod orange;
 
 #[get("/orange_hex/<color>")]
-fn orange_hex(color: String) -> String {
+fn orange_hex(color: String) -> Result<String, BadRequest<String>> {
     let ret = orange::orange_hex(color);
     match ret {
-        Ok(v) => {
-            if v {
-                format!("orange")
-            } else {
-                format!("not orange")
-            }
-        }
-        Err(e) => format!("Error: {}", e),
+        Ok(v) => Ok(format!("{}", v)),
+        Err(e) => Err(BadRequest(Some(format!("Error: {}", e.to_string())))),
     }
 }
 
 #[get("/orange_rgb/<r>/<g>/<b>")]
 fn orange_rgb(r: u8, g: u8, b: u8) -> String {
     let v = orange::orange_rgb(r, g, b);
-    if v {
-        format!("orange")
-    } else {
-        format!("not orange")
-    }
+    format!("color: {} is_orange: {}", v.color, v.is_orange)
 }
 
 #[get("/")]
