@@ -11,10 +11,10 @@ mod orange;
 #[get("/orange_hex/<color>")]
 fn orange_hex(color: String) -> Result<String, BadRequest<String>> {
     let ret = orange::orange_hex(color);
-    match ret {
-        Ok(v) => Ok(format!("{}", v)),
-        Err(e) => Err(BadRequest(Some(format!("Error: {}", e.to_string())))),
-    }
+
+    return ret
+        .map(|v| format!("{}", v))
+        .map_err(|e| BadRequest(Some(format!("Error: {}", e.to_string()))));
 }
 
 #[get("/orange_rgb/<r>/<g>/<b>")]
