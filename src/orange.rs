@@ -2,10 +2,19 @@ use raster::Color;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Response data
 #[derive(Serialize, Deserialize)]
 pub struct ColorResult {
     pub color: String,
     pub is_orange: bool,
+}
+
+/// Request data
+#[derive(Deserialize)]
+pub struct RgbColor {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl fmt::Display for ColorResult {
@@ -35,12 +44,10 @@ pub fn orange_hex(color_string: String) -> Result<ColorResult, &'static str> {
 pub fn orange_rgb(r: u8, g: u8, b: u8) -> ColorResult {
     let color = Color::rgb(r, g, b);
 
-    let res = ColorResult {
+    ColorResult {
         color: format!("r{} g{} b{}", r, g, b),
         is_orange: determine_orange(color),
-    };
-
-    res
+    }
 }
 
 /// Check if orange
