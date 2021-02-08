@@ -76,10 +76,9 @@ fn login(
 ) -> Result<status::Accepted<JsonValue>, BadRequest<JsonValue>> {
     let pass = user.password.to_string();
     cookies.add(Cookie::new("pass", pass));
-    cookies
-        .get("pass")
-        .map(|_c| Ok(status::Accepted(Some(json!({"login":"success"})))))
-        .unwrap_or(Err(BadRequest(Some(json!({"error": "Login error"})))))
+    return cookies.get("pass")
+        .map(|_v| status::Accepted(Some(json!({"login":"success"}))))
+        .ok_or(BadRequest(Some(json!({"error": "you are not logged in"}))));
 }
 
 /// Protected route
