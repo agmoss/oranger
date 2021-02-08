@@ -50,8 +50,7 @@ fn orange_rgb(r: u8, g: u8, b: u8) -> Json<orange::ColorResult> {
 /// ```
 #[post("/orange_rgb_post", data = "<rgb>")]
 fn orange_rgb_post(rgb: Json<orange::RgbColor>) -> Json<orange::ColorResult> {
-    let v = orange::orange_rgb(rgb.r, rgb.g, rgb.b);
-    Json(v)
+    return Json(orange::orange_rgb(rgb.r, rgb.g, rgb.b));
 }
 
 #[derive(Deserialize)]
@@ -88,8 +87,7 @@ fn login(
 /// ```
 #[get("/orange", format = "json")]
 fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
-    let c = cookies.get("pass");
-    match c {
+    match cookies.get("pass"){
         Some(v) => {
             if v.value() == "orange".to_string() {
                 // User logged in
@@ -105,8 +103,7 @@ fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
 /// Testing
 #[get("/examine-cookies")]
 fn handler(cookies: Cookies) -> String {
-    let c = cookies.get("pass");
-    match c {
+    match cookies.get("pass") {
         Some(v) => v.to_string(),
         None => "No Cookies".to_owned(),
     }
