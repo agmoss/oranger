@@ -8,6 +8,7 @@ extern crate rocket_contrib;
 use serde::Deserialize;
 
 use rocket::http::{Cookie, Cookies};
+use rocket::response::status;
 use rocket::response::status::BadRequest;
 use rocket::Request;
 use rocket_contrib::json::{Json, JsonValue};
@@ -66,16 +67,19 @@ pub struct AuthInfo {
 ///  --request POST \
 ///  --data '{"user_id":1,"password":"orange"}' \
 ///  -c cookies.txt \
-///  http://localhost:8000/login \
+///  http://localhost:8000/login
 /// ```
-#[post("/login", data = "<user>")]
-fn login(user: Json<AuthInfo>, mut cookies: Cookies) -> String {
+#[post("/login", data = "<user>", format = "json")]
+fn login(
+    user: Json<AuthInfo>,
+    mut cookies: Cookies,
+) -> Result<status::Accepted<JsonValue>, BadRequest<JsonValue>> {
     let pass = user.password.to_string();
     cookies.add(Cookie::new("pass", pass));
     cookies
         .get("pass")
-        .map(|_c| "Login success".to_string())
-        .unwrap_or("Login failure".to_string())
+        .map(|_c| Ok(status::Accepted(Some(json!({"login":"success"})))))
+        .unwrap_or(Err(BadRequest(Some(json!({"error": "Login error"})))))
 }
 
 /// Protected route
@@ -83,19 +87,19 @@ fn login(user: Json<AuthInfo>, mut cookies: Cookies) -> String {
 /// ```bash
 /// curl -L -b cookies.txt http://localhost:8000/orange
 /// ```
-#[get("/orange")]
-fn obtain_orange(cookies: Cookies) -> String {
+#[get("/orange", format = "json")]
+fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
     let c = cookies.get("pass");
     match c {
         Some(v) => {
             if v.value() == "orange".to_string() {
-                // User logged in 
-                "#FFA500".to_string()
+                // User logged in
+                Ok(json!({"orange":"#FFA500".to_string() }))
             } else {
-                "Invalid password".to_string()
+                Err(BadRequest(Some(json!({"error": "invalid password"}))))
             }
         }
-        None => "You are not logged in".to_owned(),
+        None => Err(BadRequest(Some(json!({"error": "you are not logged in"})))),
     }
 }
 
