@@ -22,9 +22,7 @@ mod orange;
 /// ```
 #[get("/orange_hex/<color>", format = "json")]
 fn orange_hex(color: String) -> Result<Json<orange::ColorResult>, BadRequest<JsonValue>> {
-    let ret = orange::orange_hex(color);
-
-    return ret
+    return orange::orange_hex(color)
         .map(|v| Json(v))
         .map_err(|e| BadRequest(Some(json!({"error": e.to_string()}))));
 }
@@ -36,8 +34,7 @@ fn orange_hex(color: String) -> Result<Json<orange::ColorResult>, BadRequest<Jso
 /// ```
 #[get("/orange_rgb/<r>/<g>/<b>", format = "json")]
 fn orange_rgb(r: u8, g: u8, b: u8) -> Json<orange::ColorResult> {
-    let v = orange::orange_rgb(r, g, b);
-    Json(v)
+    return Json(orange::orange_rgb(r, g, b));
 }
 
 /// Determine if rgb is orange
@@ -73,9 +70,9 @@ fn login(
     user: Json<AuthInfo>,
     mut cookies: Cookies,
 ) -> Result<status::Accepted<JsonValue>, BadRequest<JsonValue>> {
-    let pass = user.password.to_string();
-    cookies.add(Cookie::new("pass", pass));
-    return cookies.get("pass")
+    cookies.add(Cookie::new("pass", user.password.to_string()));
+    return cookies
+        .get("pass")
         .map(|_v| status::Accepted(Some(json!({"login":"success"}))))
         .ok_or(BadRequest(Some(json!({"error": "you are not logged in"}))));
 }
@@ -87,7 +84,7 @@ fn login(
 /// ```
 #[get("/orange", format = "json")]
 fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
-    match cookies.get("pass"){
+    match cookies.get("pass") {
         Some(v) => {
             if v.value() == "orange".to_string() {
                 // User logged in

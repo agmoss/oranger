@@ -29,9 +29,7 @@ pub fn orange_hex(color_string: String) -> Result<ColorResult, &'static str> {
 
     hex.push_str(&color_string);
 
-    let color = Color::hex(&hex);
-
-    match color {
+    match Color::hex(&hex) {
         Ok(v) => Ok(ColorResult {
             color: hex,
             is_orange: determine_orange(v),
@@ -42,11 +40,9 @@ pub fn orange_hex(color_string: String) -> Result<ColorResult, &'static str> {
 
 /// Determine if rgb value is orange
 pub fn orange_rgb(r: u8, g: u8, b: u8) -> ColorResult {
-    let color = Color::rgb(r, g, b);
-
     ColorResult {
         color: format!("r{} g{} b{}", r, g, b),
-        is_orange: determine_orange(color),
+        is_orange: determine_orange(Color::rgb(r, g, b)),
     }
 }
 
