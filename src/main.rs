@@ -18,9 +18,9 @@ mod orange;
 /// Determine if hex code is orange
 /// # Example
 /// ```bash
-/// curl -v http://localhost:8000/orange_hex/FFA500
+/// curl -v http://localhost:8000/orange/FFA500
 /// ```
-#[get("/orange_hex/<color>", format = "json")]
+#[get("/orange/<color>", format = "json")]
 fn orange_hex(color: String) -> Result<Json<orange::ColorResult>, BadRequest<JsonValue>> {
     return orange::orange_hex(color)
         .map(|v| Json(v))
@@ -30,9 +30,9 @@ fn orange_hex(color: String) -> Result<Json<orange::ColorResult>, BadRequest<Jso
 /// Determine if rgb is orange
 /// # Example
 /// ```bash
-/// curl -v http://localhost:8000/orange_rgb/255/165/0
+/// curl -v http://localhost:8000/orange/255/165/0
 /// ```
-#[get("/orange_rgb/<r>/<g>/<b>", format = "json")]
+#[get("/orange/<r>/<g>/<b>", format = "json")]
 fn orange_rgb(r: u8, g: u8, b: u8) -> Json<orange::ColorResult> {
     return Json(orange::orange_rgb(r, g, b));
 }
@@ -43,9 +43,9 @@ fn orange_rgb(r: u8, g: u8, b: u8) -> Json<orange::ColorResult> {
 /// curl --header "Content-Type: application/json" \
 ///  --request POST \
 ///  --data '{"r":255,"g":165,"b":0}' \
-///  http://localhost:8000/orange_rgb_post
+///  http://localhost:8000/orange
 /// ```
-#[post("/orange_rgb_post", data = "<rgb>")]
+#[post("/orange", data = "<rgb>")]
 fn orange_rgb_post(rgb: Json<orange::RgbColor>) -> Json<orange::ColorResult> {
     return Json(orange::orange_rgb(rgb.r, rgb.g, rgb.b));
 }
