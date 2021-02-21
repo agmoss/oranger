@@ -7,13 +7,22 @@ extern crate rocket_contrib;
 
 use serde::Deserialize;
 
+extern crate time;
+
+use rocket::http::Status;
 use rocket::http::{Cookie, Cookies};
+use rocket::request::{self, FromRequest};
 use rocket::response::status;
 use rocket::response::status::BadRequest;
+use rocket::Outcome;
 use rocket::Request;
 use rocket_contrib::json::{Json, JsonValue};
+use time::Duration;
 
 mod orange;
+
+const PASSWORD: &str = "orange";
+const API_KEY: &str = "not-orange";
 
 /// Determine if hex code is orange
 /// # Example
@@ -70,9 +79,14 @@ fn login(
     user: Json<AuthInfo>,
     mut cookies: Cookies,
 ) -> Result<status::Accepted<JsonValue>, BadRequest<JsonValue>> {
-    cookies.add(Cookie::new("pass", user.password.to_string()));
+    cookies.add_private(
+        Cookie::build("password", user.password.to_string())
+            .path("/")
+            .max_age(Duration::days(5))
+            .finish(),
+    );
     return cookies
-        .get("pass")
+        .get_private("password")
         .map(|_v| status::Accepted(Some(json!({"login":"success"}))))
         .ok_or(BadRequest(Some(json!({"error": "you are not logged in"}))));
 }
@@ -83,12 +97,16 @@ fn login(
 /// curl -L -b cookies.txt http://localhost:8000/orange
 /// ```
 #[get("/orange", format = "json")]
-fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
-    match cookies.get("pass") {
+fn obtain_orange(
+    mut cookies: Cookies,
+) -> Result<status::Accepted<JsonValue>, BadRequest<JsonValue>> {
+    match cookies.get_private("password") {
         Some(v) => {
-            if v.value() == "orange".to_string() {
+            if v.value() == PASSWORD {
                 // User logged in
-                Ok(json!({"orange":"#FFA500".to_string() }))
+                Ok(status::Accepted(Some(
+                    json!({"orange":"#FFA500".to_string() }),
+                )))
             } else {
                 Err(BadRequest(Some(json!({"error": "invalid password"}))))
             }
@@ -99,11 +117,59 @@ fn obtain_orange(cookies: Cookies) -> Result<JsonValue, BadRequest<JsonValue>> {
 
 /// Testing
 #[get("/examine-cookies")]
-fn handler(cookies: Cookies) -> String {
-    match cookies.get("pass") {
+fn handler(mut cookies: Cookies) -> String {
+    match cookies.get_private("pass") {
         Some(v) => v.to_string(),
         None => "No Cookies".to_owned(),
     }
+}
+
+/// Modified example of https://api.rocket.rs/v0.4/rocket/request/trait.FromRequest.html#example-1
+/// type level proof
+
+struct ApiKey(String);
+
+fn is_valid(key: &str) -> bool {
+    key == API_KEY
+}
+
+#[derive(Debug)]
+enum ApiKeyError {
+    Missing,
+    Invalid,
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for ApiKey {
+    type Error = ApiKeyError;
+
+    /// Can Activate?
+    /// authenticate -> api_key -> Option<Authorized>
+    /// or more specifically
+    /// from_request -> request: &Request -> Outcome<S,E>
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        match request.headers().get_one("x-api-key") {
+            Some(p) => {
+                if is_valid(p) {
+                    // ie. Some(Authorized)
+                    Outcome::Success(ApiKey(p.to_string()))
+                } else {
+                    Outcome::Failure((Status::BadRequest, ApiKeyError::Invalid))
+                }
+            }
+            None => Outcome::Failure((Status::BadRequest, ApiKeyError::Missing)),
+        }
+    }
+}
+
+/// sensitive -> key:ApiKey -> JsonValue
+/// The only way to get the ApiKey type is from `FromRequest` implementation
+/// # Example
+/// ```bash
+/// curl --header "Content-Type: application/json" -H "x-api-key: not-orange" --request POST http://localhost:8000/sensitive
+/// ``
+#[post("/sensitive", format = "json")]
+fn requires_api_key(_key: ApiKey) -> JsonValue {
+    json!({"data":"sensitive data"})
 }
 
 #[get("/")]
@@ -126,8 +192,9 @@ fn main() {
                 orange_rgb_post,
                 login,
                 obtain_orange,
+                requires_api_key,
                 handler,
-                index
+                index,
             ],
         )
         .register(catchers![not_found])
